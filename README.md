@@ -1,11 +1,11 @@
 # WRITEMOTION
 
-<img width="1266" height="939" alt="image" src="https://github.com/user-attachments/assets/96db35b1-b293-41eb-a8af-cc6448810abd" />
-<img width="1142" height="854" alt="image" src="https://github.com/user-attachments/assets/972ef6a8-da5c-4189-ac54-93d28608f05d" />
-
-
 **WRITEMOTION** helps your writing feel more human by blending your natural voice with the styles of authors you admire. 
 Instead of producing generic AI text, it builds a fingerprint of your unique writing style, learns from writers you choose, and combines both into suggestions that feel alive and personal.
+
+## Screenshots
+<img width="1266" height="939" alt="image" src="https://github.com/user-attachments/assets/96db35b1-b293-41eb-a8af-cc6448810abd" />
+<img width="1142" height="854" alt="image" src="https://github.com/user-attachments/assets/972ef6a8-da5c-4189-ac54-93d28608f05d" />
 
 ## How it works
 
