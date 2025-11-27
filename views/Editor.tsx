@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { UserProfile, ReferenceAuthor, EditorSettings, RewriteSuggestion, SessionStats } from '../types';
 import { generateRewrites, generateAuthorPersona } from '../services/gemini';
 import AuthorCard from '../components/AuthorCard';
-import { Wand2, Sliders, RefreshCw, Check, X, ChevronLeft, RotateCcw, Search, BarChart3, Info, Plus, Loader2, Download, Copy, FileText, FileDown, Share, Settings, PenTool, Save } from 'lucide-react';
+import { Wand2, Sliders, RefreshCw, Check, X, ChevronLeft, RotateCcw, Search, BarChart3, Info, Plus, Loader2, Download, Copy, FileText, FileDown, Share, Settings, PenTool, Save, Filter, ArrowDownAZ } from 'lucide-react';
 import { jsPDF } from "jspdf";
 
 interface EditorProps {
@@ -38,11 +38,27 @@ const Editor: React.FC<EditorProps> = ({ userProfile, authors, onAddAuthor, onBa
   const [copyFeedback, setCopyFeedback] = useState(false);
   const [saveToLibrary, setSaveToLibrary] = useState(false);
 
+  // New state for sorting and filtering
+  const [sortOrder, setSortOrder] = useState<'name' | 'category'>('name');
+  const [hideUnselected, setHideUnselected] = useState(false);
+
   const selectedAuthors = authors.filter(a => settings.targetAuthorIds.includes(a.id));
-  const filteredAuthors = authors.filter(a => 
-    a.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-    a.description.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  
+  const filteredAuthors = authors
+    .filter(a => {
+      const matchesSearch = a.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                            a.description.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesFilter = hideUnselected ? settings.targetAuthorIds.includes(a.id) : true;
+      return matchesSearch && matchesFilter;
+    })
+    .sort((a, b) => {
+        if (sortOrder === 'category') {
+            const catCompare = a.category.localeCompare(b.category);
+            if (catCompare !== 0) return catCompare;
+            return a.name.localeCompare(b.name);
+        }
+        return a.name.localeCompare(b.name);
+    });
 
   const handleSelect = (e: React.SyntheticEvent<HTMLTextAreaElement>) => {
     const target = e.target as HTMLTextAreaElement;
@@ -419,16 +435,41 @@ const Editor: React.FC<EditorProps> = ({ userProfile, authors, onAddAuthor, onBa
                 <span className="text-xs font-mono font-bold">{selectedAuthors.length}/2</span>
             </div>
             
-            {/* Search Bar */}
-            <div className="relative">
-                <Search size={14} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-ink" />
-                <input 
-                    type="text" 
-                    placeholder="SEARCH SCRIBE LIBRARY..." 
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full bg-white border-2 border-ink py-2 pl-9 pr-3 text-xs font-mono text-ink placeholder:text-industrial-dim focus:outline-none focus:border-industrial-orange transition-colors"
-                />
+            <div className="space-y-2">
+                {/* Search Bar */}
+                <div className="relative">
+                    <Search size={14} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-ink" />
+                    <input 
+                        type="text" 
+                        placeholder="SEARCH SCRIBE LIBRARY..." 
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-full bg-white border-2 border-ink py-2 pl-9 pr-3 text-xs font-mono text-ink placeholder:text-industrial-dim focus:outline-none focus:border-industrial-orange transition-colors"
+                    />
+                </div>
+
+                {/* Filter & Sort Controls */}
+                <div className="flex items-center justify-between">
+                    <button 
+                        onClick={() => setHideUnselected(!hideUnselected)}
+                        className={`text-[10px] font-mono font-bold uppercase flex items-center gap-1.5 px-2 py-1 border transition-colors ${hideUnselected ? 'bg-industrial-orange text-white border-industrial-orange' : 'bg-white border-ink text-ink hover:bg-industrial-gray/20'}`}
+                    >
+                        <Filter size={10} />
+                        {hideUnselected ? 'Selection' : 'All Scribes'}
+                    </button>
+
+                    <div className="flex items-center gap-2 border border-ink bg-white px-2 py-1">
+                        <ArrowDownAZ size={10} className="text-industrial-dim" />
+                        <select 
+                            value={sortOrder}
+                            onChange={(e) => setSortOrder(e.target.value as any)}
+                            className="text-[10px] font-mono font-bold uppercase bg-transparent border-none outline-none text-ink cursor-pointer"
+                        >
+                            <option value="name">Name</option>
+                            <option value="category">Category</option>
+                        </select>
+                    </div>
+                </div>
             </div>
 
             <div className="grid grid-cols-1 gap-3 pb-10">
@@ -443,33 +484,41 @@ const Editor: React.FC<EditorProps> = ({ userProfile, authors, onAddAuthor, onBa
                   ))
               ) : (
                   <div className="text-center py-6 space-y-3 border-2 border-dashed border-ink/20 bg-white">
-                      <p className="text-xs font-mono text-industrial-dim uppercase">
-                          Scribe Not Found.
-                      </p>
-                      
-                      <div className="flex flex-col gap-3 max-w-[200px] mx-auto">
-                        <button 
-                            onClick={handleAddPersona}
-                            disabled={isAddingPersona}
-                            className="w-full px-4 py-2 bg-paper border border-ink text-xs font-mono font-bold hover:bg-industrial-orange hover:text-white transition-colors flex items-center justify-center gap-2"
-                        >
-                            {isAddingPersona ? (
-                                <><Loader2 size={12} className="animate-spin" /> ANALYZING...</>
-                            ) : (
-                                <><Plus size={12} /> GENERATE PROFILE</>
-                            )}
-                        </button>
-                        
-                        <label className="flex items-center gap-2 justify-center text-[9px] font-mono text-ink cursor-pointer select-none opacity-80 hover:opacity-100">
-                          <input 
-                            type="checkbox" 
-                            checked={saveToLibrary}
-                            onChange={(e) => setSaveToLibrary(e.target.checked)}
-                            className="accent-industrial-orange w-3 h-3 border-ink rounded-none focus:ring-0"
-                          />
-                          SAVE TO LOCAL LIBRARY
-                        </label>
-                      </div>
+                      {!hideUnselected ? (
+                          <>
+                              <p className="text-xs font-mono text-industrial-dim uppercase">
+                                  Scribe Not Found.
+                              </p>
+                              
+                              <div className="flex flex-col gap-3 max-w-[200px] mx-auto">
+                                <button 
+                                    onClick={handleAddPersona}
+                                    disabled={isAddingPersona}
+                                    className="w-full px-4 py-2 bg-paper border border-ink text-xs font-mono font-bold hover:bg-industrial-orange hover:text-white transition-colors flex items-center justify-center gap-2"
+                                >
+                                    {isAddingPersona ? (
+                                        <><Loader2 size={12} className="animate-spin" /> ANALYZING...</>
+                                    ) : (
+                                        <><Plus size={12} /> GENERATE PROFILE</>
+                                    )}
+                                </button>
+                                
+                                <label className="flex items-center gap-2 justify-center text-[9px] font-mono text-ink cursor-pointer select-none opacity-80 hover:opacity-100">
+                                  <input 
+                                    type="checkbox" 
+                                    checked={saveToLibrary}
+                                    onChange={(e) => setSaveToLibrary(e.target.checked)}
+                                    className="accent-industrial-orange w-3 h-3 border-ink rounded-none focus:ring-0"
+                                  />
+                                  SAVE TO LOCAL LIBRARY
+                                </label>
+                              </div>
+                          </>
+                      ) : (
+                          <p className="text-xs font-mono text-industrial-dim uppercase">
+                             No active scribes match filter.
+                          </p>
+                      )}
                   </div>
               )}
             </div>

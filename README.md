@@ -1,14 +1,11 @@
 # WRITEMOTION
 
 **Stylistic AI Writing Engine.**
+*Absorb great styles. Blend. Bring life to your writing.*
 
 WRITEMOTION helps your writing feel more human by blending your natural voice with the styles of authors you admire. Instead of producing generic AI text, it builds a fingerprint of your unique writing style, learns from writers you choose, and combines both into suggestions that feel alive and personal.
 
-# Screenshots
-<img width="1225" height="919" alt="image" src="https://github.com/user-attachments/assets/acd179d0-ff3f-403b-afc9-44125931152f" />
-<img width="1426" height="1093" alt="image" src="https://github.com/user-attachments/assets/70891da7-3304-4e7e-a0c1-88e1ab059ccc" />
-
-# How it works
+## How it works
 
 ### Stage 1: Style Extraction
 Upload a text file or paste your own writing samples into the Dashboard. WRITEMOTION uses **Gemini 2.5 Flash** to analyze your text and build a visual **Style Fingerprint** based on six metrics: Vocabulary, Variety, Formality, Imagery, Warmth, and Pacing.
