@@ -3,11 +3,11 @@
 **WRITEMOTION** helps your writing feel more human by blending your natural voice with the styles of authors you admire. 
 Instead of producing generic AI text, it builds a fingerprint of your unique writing style, learns from writers you choose, and combines both into suggestions that feel alive and personal.
 
-## Screenshots
+# Screenshots
 <img width="1266" height="939" alt="image" src="https://github.com/user-attachments/assets/96db35b1-b293-41eb-a8af-cc6448810abd" />
 <img width="1142" height="854" alt="image" src="https://github.com/user-attachments/assets/972ef6a8-da5c-4189-ac54-93d28608f05d" />
 
-## How it works
+# How it works
 
 ### Stage 1: Style Extraction
 Upload a text file or paste your own writing samples into the Dashboard. WRITEMOTION uses **Gemini 2.5 Flash** to analyze your text and build a visual **Style Fingerprint** based on six metrics: Vocabulary, Variety, Formality, Imagery, Warmth, and Pacing.
