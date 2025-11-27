@@ -6,7 +6,7 @@ WRITEMOTION helps your writing feel more human by blending your natural voice wi
 
 # Screenshots
 <img width="1225" height="919" alt="image" src="https://github.com/user-attachments/assets/acd179d0-ff3f-403b-afc9-44125931152f" />
-<img width="1428" height="1092" alt="image" src="https://github.com/user-attachments/assets/e37bb96a-5a5c-4a14-9d75-2b8a8a12faf7" />
+<img width="1426" height="1093" alt="image" src="https://github.com/user-attachments/assets/70891da7-3304-4e7e-a0c1-88e1ab059ccc" />
 
 # How it works
 
