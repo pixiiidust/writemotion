@@ -1,5 +1,7 @@
 # WRITEMOTION
 
+<img width="1266" height="939" alt="image" src="https://github.com/user-attachments/assets/96db35b1-b293-41eb-a8af-cc6448810abd" />
+
 **Stylistic AI Writing Engine.**
 *Absorb great styles. Blend. Bring life to your writing.*
 
