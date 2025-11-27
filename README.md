@@ -1,7 +1,9 @@
 # WRITEMOTION
 
 **Stylistic AI Writing Engine.**
+
 WRITEMOTION helps your writing feel more human by blending your natural voice with the styles of authors you admire. Instead of producing generic AI text, it builds a fingerprint of your unique writing style, learns from writers you choose, and combines both into suggestions that feel alive and personal.
+
 # Screenshots
 <img width="1225" height="919" alt="image" src="https://github.com/user-attachments/assets/acd179d0-ff3f-403b-afc9-44125931152f" />
 <img width="1428" height="1092" alt="image" src="https://github.com/user-attachments/assets/e37bb96a-5a5c-4a14-9d75-2b8a8a12faf7" />
