@@ -3,7 +3,6 @@
 **Version:** 2.0.4  
 **Status:** Active / Draft  
 **Date:** October 26, 2025
-
 **Author:** Product Engineering Team
 ---
 
