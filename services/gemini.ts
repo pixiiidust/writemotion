@@ -5,14 +5,13 @@ import { StyleMetrics, RewriteSuggestion, ReferenceAuthor } from '../types';
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 const ANALYSIS_MODEL = "gemini-2.5-flash";
-const WRITING_MODEL = "gemini-2.5-flash"; // Fast enough for interactive editing
+const WRITING_MODEL = "gemini-2.5-flash"; 
 
 /**
  * Analyzes a text sample to extract style metrics.
  */
 export const analyzeStyle = async (text: string): Promise<StyleMetrics> => {
   if (!text || text.length < 50) {
-    // Return default neutral metrics if text is too short
     return {
       vocabularyComplexity: 50,
       sentenceVariety: 50,
@@ -39,10 +38,13 @@ export const analyzeStyle = async (text: string): Promise<StyleMetrics> => {
   try {
     const response = await ai.models.generateContent({
       model: ANALYSIS_MODEL,
-      contents: `Analyze the writing style of the following text. Provide quantitative scores (0-100) for the requested metrics.
-      
-      Text to analyze:
-      "${text.substring(0, 2000)}..."`, // Truncate to avoid token limits on massive pastes
+      contents: [
+        {
+          parts: [
+            { text: `Analyze the writing style of the following text. Provide quantitative scores (0-100) for the requested metrics.\n\nText to analyze:\n"${text.substring(0, 3000)}..."` }
+          ]
+        }
+      ],
       config: {
         responseMimeType: "application/json",
         responseSchema: responseSchema,
@@ -53,7 +55,6 @@ export const analyzeStyle = async (text: string): Promise<StyleMetrics> => {
     return data as StyleMetrics;
   } catch (error) {
     console.error("Analysis failed", error);
-    // Fallback
     return {
       vocabularyComplexity: 50,
       sentenceVariety: 50,
@@ -90,10 +91,13 @@ export const generateAuthorPersona = async (authorName: string): Promise<Referen
   try {
     const response = await ai.models.generateContent({
       model: ANALYSIS_MODEL,
-      contents: `Generate a stylistic profile for the author: "${authorName}".
-      If the author is well-known, describe their actual style.
-      If the author is unknown or fictional, create a plausible style profile based on the name context or generic writer traits, but try to be specific.
-      `,
+      contents: [
+        {
+          parts: [
+            { text: `Generate a stylistic profile for the author: "${authorName}".\nIf the author is well-known, describe their actual style.\nIf the author is unknown or fictional, create a plausible style profile based on the name context or generic writer traits, but try to be specific.` }
+          ]
+        }
+      ],
       config: {
         responseMimeType: "application/json",
         responseSchema: responseSchema,
@@ -103,18 +107,15 @@ export const generateAuthorPersona = async (authorName: string): Promise<Referen
 
     const data = JSON.parse(response.text || "{}");
     
-    // Generate a random color for the avatar to make it distinct
     const colors = ['0ea5e9', '8b5cf6', 'f59e0b', '10b981', 'f43f5e', '6366f1'];
     const randomColor = colors[Math.floor(Math.random() * colors.length)];
 
-    // Construct the ReferenceAuthor object
     return {
       id: `generated-${Date.now()}`,
       name: authorName,
       description: data.description,
       traits: data.traits.slice(0, 3),
       category: data.category,
-      // Use UI Avatars with Initials
       avatarUrl: `https://ui-avatars.com/api/?name=${encodeURIComponent(authorName)}&background=${randomColor}&color=fff&bold=true&length=2`,
       isCustom: true
     };
@@ -150,7 +151,13 @@ export const generateRewrites = async (
 
   const authorsString = authorNames.join(" and ");
 
-  const systemInstruction = `You are WRITEMOTION, an advanced AI writing coach. 
+  // Truncate input to prevent payload size errors (5000 chars ~ 1000 tokens)
+  const MAX_INPUT_CHARS = 5000;
+  const safeOriginalText = originalText.length > MAX_INPUT_CHARS 
+    ? originalText.substring(0, MAX_INPUT_CHARS) 
+    : originalText;
+
+  const systemInstructionText = `You are WRITEMOTION, an advanced AI writing coach. 
   Your goal is to rewrite the user's text by blending their *authentic* baseline style with the stylistic strengths of selected reference authors.
   
   User's Baseline Style Fingerprint (The Anchor):
@@ -178,12 +185,22 @@ export const generateRewrites = async (
   try {
     const response = await ai.models.generateContent({
       model: WRITING_MODEL,
-      contents: `Rewrite this text:\n"${originalText}"`,
+      // Using explicit content parts array is more robust for large inputs/special chars
+      contents: [
+        {
+          parts: [
+            { text: `Rewrite this text:\n"${safeOriginalText}"` }
+          ]
+        }
+      ],
       config: {
-        systemInstruction: systemInstruction,
+        // Passing systemInstruction as an object ensures correct serialization
+        systemInstruction: {
+            parts: [{ text: systemInstructionText }]
+        },
         responseMimeType: "application/json",
         responseSchema: responseSchema,
-        temperature: 0.85 // High enough for creativity, low enough to follow instructions
+        temperature: 0.85
       }
     });
 
@@ -191,7 +208,7 @@ export const generateRewrites = async (
     
     return rawSuggestions.map((s: any, index: number) => ({
       id: `sugg-${Date.now()}-${index}`,
-      originalText,
+      originalText: safeOriginalText, // Return the safe text so the editor can match it if needed
       rewrittenText: s.rewrittenText,
       rationale: s.rationale,
       similarityScore: s.similarityScore

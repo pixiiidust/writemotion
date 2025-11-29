@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { UserProfile, ReferenceAuthor, EditorSettings, RewriteSuggestion, SessionStats } from '../types';
 import { generateRewrites, generateAuthorPersona } from '../services/gemini';
 import AuthorCard from '../components/AuthorCard';
-import { Wand2, Sliders, RefreshCw, Check, X, ChevronLeft, RotateCcw, Search, BarChart3, Info, Plus, Loader2, Download, Copy, FileText, FileDown, Share, Settings, PenTool, Save, Filter, ArrowDownAZ } from 'lucide-react';
+import { Wand2, Sliders, RefreshCw, Check, X, ChevronLeft, RotateCcw, Search, BarChart3, Info, Plus, Loader2, Download, Copy, FileText, FileDown, Share, Settings, PenTool, Save, Filter, ArrowDownAZ, Menu } from 'lucide-react';
 import { jsPDF } from "jspdf";
 
 interface EditorProps {
@@ -29,7 +29,7 @@ const Editor: React.FC<EditorProps> = ({ userProfile, authors, onAddAuthor, onBa
 
   const [suggestions, setSuggestions] = useState<RewriteSuggestion[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [showAuthors, setShowAuthors] = useState(false);
+  const [showSidebar, setShowSidebar] = useState(false);
   
   const [generationContext, setGenerationContext] = useState<{ type: 'selection' | 'full', originalText: string } | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -59,6 +59,9 @@ const Editor: React.FC<EditorProps> = ({ userProfile, authors, onAddAuthor, onBa
         }
         return a.name.localeCompare(b.name);
     });
+
+  const hasContent = content.trim().length > 5 || selection.length > 0;
+  const hasAuthors = selectedAuthors.length > 0;
 
   const handleSelect = (e: React.SyntheticEvent<HTMLTextAreaElement>) => {
     const target = e.target as HTMLTextAreaElement;
@@ -211,90 +214,107 @@ const Editor: React.FC<EditorProps> = ({ userProfile, authors, onAddAuthor, onBa
     ? Math.round((stats.suggestionsAccepted / stats.suggestionsGenerated) * 100) 
     : 0;
 
+  // Sidebar is visible if toggled ON OR if suggestions are being shown
+  const isSidebarVisible = showSidebar || suggestions.length > 0;
+
   return (
-    <div className="flex h-screen bg-paper text-ink overflow-hidden font-sans">
-      {/* Main Drafting Area */}
-      <div className="flex-1 flex flex-col h-full relative transition-all duration-300">
-        <header className="h-16 border-b-2 border-ink flex items-center px-4 md:px-6 justify-between bg-paper z-10">
-          <div className="flex items-center gap-4">
-            <button onClick={onBack} className="text-ink hover:text-industrial-orange flex items-center gap-2 text-xs font-mono font-bold uppercase transition-colors">
-              <ChevronLeft size={14} /> Back
-            </button>
-            <div className="h-6 w-px bg-ink/30 hidden md:block"></div>
-            <span className="text-sm font-display font-bold text-ink uppercase tracking-widest hidden md:inline">Drafting Canvas</span>
-          </div>
-          
-          <div className="flex items-center gap-4">
-             {/* Export Dropdown */}
-             <div className="relative">
-                <button 
-                  onClick={() => setShowExportMenu(!showExportMenu)}
-                  className="flex items-center gap-2 px-3 py-1.5 bg-white border border-ink hover:bg-ink hover:text-white transition-all text-xs font-mono font-bold uppercase shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-x-[2px] active:translate-y-[2px]"
+    <div className="h-screen bg-paper text-ink overflow-hidden font-sans relative">
+      
+      {/* Persistent Top Bar */}
+      <header className="fixed top-0 left-0 right-0 h-16 border-b-2 border-ink flex items-center px-4 md:px-6 justify-between bg-paper z-50">
+        <div className="flex items-center gap-4">
+          <button onClick={onBack} className="text-ink hover:text-industrial-orange flex items-center gap-2 text-xs font-mono font-bold uppercase transition-colors">
+            <ChevronLeft size={14} /> Back
+          </button>
+          <div className="h-6 w-px bg-ink/30 hidden md:block"></div>
+          <span className="text-sm font-display font-bold text-ink uppercase tracking-widest hidden md:inline">Drafting Canvas</span>
+        </div>
+        
+        <div className="flex items-center gap-4">
+           {selectedAuthors.length > 0 ? (
+              <div className="flex items-center gap-2">
+                 <button 
+                  onClick={() => setShowSidebar(true)}
+                  className="flex items-center gap-2 px-3 py-1.5 bg-industrial-orange/10 border border-industrial-orange text-xs font-mono uppercase hover:bg-industrial-orange hover:text-white transition-colors group"
                 >
-                    {copyFeedback ? <Check size={14} className="text-emerald-500" /> : <Share size={14} />}
-                    <span>Export</span>
-                </button>
-                
-                {showExportMenu && (
-                  <div className="absolute right-0 top-10 w-48 bg-white border-2 border-ink shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] z-50">
-                     <button onClick={handleCopyToClipboard} className="w-full text-left px-4 py-3 text-xs font-mono text-ink hover:bg-paper flex items-center gap-2 transition-colors border-b border-ink/10">
-                        <Copy size={12} /> Copy to Clipboard
-                     </button>
-                     <button onClick={handleDownloadTxt} className="w-full text-left px-4 py-3 text-xs font-mono text-ink hover:bg-paper flex items-center gap-2 transition-colors border-b border-ink/10">
-                        <FileText size={12} /> Download .txt
-                     </button>
-                     <button onClick={handleDownloadMd} className="w-full text-left px-4 py-3 text-xs font-mono text-ink hover:bg-paper flex items-center gap-2 transition-colors border-b border-ink/10">
-                        <FileDown size={12} /> Download .md
-                     </button>
-                     <button onClick={handleDownloadPdf} className="w-full text-left px-4 py-3 text-xs font-mono text-ink hover:bg-paper flex items-center gap-2 transition-colors">
-                        <FileText size={12} /> Download .pdf
-                     </button>
+                  <div className="flex -space-x-1">
+                      {selectedAuthors.map(a => (
+                           <img key={a.id} src={a.avatarUrl} alt="" className="w-5 h-5 rounded-none border border-ink grayscale group-hover:grayscale-0" />
+                      ))}
                   </div>
-                )}
-                {showExportMenu && <div className="fixed inset-0 z-40" onClick={() => setShowExportMenu(false)}></div>}
-             </div>
-
-             {selectedAuthors.length > 0 ? (
-                <div className="flex items-center gap-2">
-                   <button 
-                    onClick={() => setShowAuthors(!showAuthors)}
-                    className="flex items-center gap-2 px-3 py-1.5 bg-industrial-orange/10 border border-industrial-orange text-xs font-mono uppercase hover:bg-industrial-orange hover:text-white transition-colors group"
-                  >
-                    <div className="flex -space-x-1">
-                        {selectedAuthors.map(a => (
-                             <img key={a.id} src={a.avatarUrl} alt="" className="w-5 h-5 rounded-none border border-ink grayscale group-hover:grayscale-0" />
-                        ))}
-                    </div>
-                    <span className="text-ink group-hover:text-white"><span className="font-bold">Active:</span> {selectedAuthors.map(a => a.name.split(' ')[1] || a.name).join(' + ')}</span>
-                  </button>
-                  <button 
-                    onClick={resetToBaseline}
-                    className="p-1.5 text-ink hover:text-red-500 border border-transparent hover:border-red-500 transition-colors"
-                  >
-                    <X size={14} />
-                  </button>
-                </div>
-             ) : (
-                <button 
-                  onClick={() => setShowAuthors(!showAuthors)}
-                  className="flex items-center gap-2 text-xs font-mono font-bold uppercase bg-white border border-ink hover:bg-ink hover:text-white text-ink px-3 py-1.5 transition-all shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-x-[2px] active:translate-y-[2px]"
-                >
-                  <Search size={12} />
-                  Select Scribe
+                  <span className="text-ink group-hover:text-white"><span className="font-bold">Active:</span> {selectedAuthors.map(a => a.name.split(' ')[1] || a.name).join(' + ')}</span>
                 </button>
-             )}
-          </div>
-        </header>
+                <button 
+                  onClick={resetToBaseline}
+                  className="p-1.5 text-ink hover:text-red-500 border border-transparent hover:border-red-500 transition-colors"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+           ) : (
+              <button 
+                onClick={() => setShowSidebar(!showSidebar)}
+                className={`flex items-center gap-2 text-xs font-mono font-bold uppercase bg-white border border-ink hover:bg-ink hover:text-white text-ink px-3 py-1.5 transition-all shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-x-[2px] active:translate-y-[2px] ${hasContent && !hasAuthors ? 'animate-pulse' : ''}`}
+              >
+                <Search size={12} />
+                Select Scribe
+              </button>
+           )}
 
+           {/* Hamburger Menu to Toggle Sidebar */}
+           <button 
+              onClick={() => setShowSidebar(!showSidebar)}
+              className="p-2 border border-transparent hover:bg-ink/5 hover:border-ink transition-colors"
+           >
+              <Menu size={20} />
+           </button>
+        </div>
+      </header>
+
+      {/* Main Drafting Area - Padded top to avoid header overlap */}
+      <div className="flex-1 flex flex-col h-full pt-16 transition-all duration-300 w-full relative z-0">
         <div className="flex-1 overflow-auto p-4 md:p-8 flex justify-center relative bg-grid-pattern">
            {/* Document Container */}
            <div className="w-full max-w-4xl h-full min-h-[600px] bg-white border-2 border-ink shadow-[8px_8px_0px_0px_rgba(0,0,0,0.1)] relative flex flex-col">
+              
               {/* Technical Header inside Document */}
-              <div className="border-b border-ink p-2 flex justify-between items-center bg-paper/50 text-[10px] font-mono text-industrial-dim select-none">
-                  <span>DOC_REF: {Date.now().toString().slice(-6)}</span>
-                  <span>STATUS: DRAFT</span>
-                  <span>LN: {content.split('\n').length}</span>
+              <div className="border-b border-ink p-2 flex justify-between items-center bg-paper/50 text-[10px] font-mono text-industrial-dim select-none relative">
+                  <div className="flex gap-4">
+                    <span>DOC_REF: {Date.now().toString().slice(-6)}</span>
+                    <span>STATUS: DRAFT</span>
+                    <span>LN: {content.split('\n').length}</span>
+                  </div>
+
+                  {/* Export Button Relocated Here */}
+                  <div className="relative">
+                    <button 
+                      onClick={() => setShowExportMenu(!showExportMenu)}
+                      className="flex items-center gap-2 px-2 py-0.5 bg-white border border-ink hover:bg-ink hover:text-white transition-all text-[10px] font-mono font-bold uppercase"
+                    >
+                        {copyFeedback ? <Check size={10} className="text-emerald-500" /> : <Share size={10} />}
+                        <span>Export</span>
+                    </button>
+                    
+                    {showExportMenu && (
+                      <div className="absolute right-0 top-6 w-40 bg-white border-2 border-ink shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] z-50">
+                        <button onClick={handleCopyToClipboard} className="w-full text-left px-3 py-2 text-[10px] font-mono text-ink hover:bg-paper flex items-center gap-2 transition-colors border-b border-ink/10">
+                            <Copy size={10} /> Copy to Clipboard
+                        </button>
+                        <button onClick={handleDownloadTxt} className="w-full text-left px-3 py-2 text-[10px] font-mono text-ink hover:bg-paper flex items-center gap-2 transition-colors border-b border-ink/10">
+                            <FileText size={10} /> Download .txt
+                        </button>
+                        <button onClick={handleDownloadMd} className="w-full text-left px-3 py-2 text-[10px] font-mono text-ink hover:bg-paper flex items-center gap-2 transition-colors border-b border-ink/10">
+                            <FileDown size={10} /> Download .md
+                        </button>
+                        <button onClick={handleDownloadPdf} className="w-full text-left px-3 py-2 text-[10px] font-mono text-ink hover:bg-paper flex items-center gap-2 transition-colors">
+                            <FileText size={10} /> Download .pdf
+                        </button>
+                      </div>
+                    )}
+                    {showExportMenu && <div className="fixed inset-0 z-40" onClick={() => setShowExportMenu(false)}></div>}
+                  </div>
               </div>
+
               <textarea
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
@@ -326,8 +346,8 @@ const Editor: React.FC<EditorProps> = ({ userProfile, authors, onAddAuthor, onBa
         )}
       </div>
 
-      {/* Right Sidebar: Control Rig */}
-      <div className={`w-80 md:w-96 border-l-2 border-ink bg-paper flex flex-col h-full transition-transform duration-300 absolute md:relative right-0 z-30 shadow-2xl ${showAuthors || suggestions.length ? 'translate-x-0' : 'translate-x-full md:translate-x-0'}`}>
+      {/* Right Sidebar: Control Rig - Fixed Overlay */}
+      <div className={`fixed right-0 top-16 bottom-0 w-80 md:w-96 border-l-2 border-ink bg-paper flex flex-col z-40 shadow-2xl transition-transform duration-300 transform ${isSidebarVisible ? 'translate-x-0' : 'translate-x-full'}`}>
         
         <div className="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar">
           
@@ -337,7 +357,7 @@ const Editor: React.FC<EditorProps> = ({ userProfile, authors, onAddAuthor, onBa
                <h3 className="text-sm font-display font-bold uppercase flex items-center gap-2">
                  <Sliders size={16} /> Style Controls
                </h3>
-               <button onClick={() => setShowAuthors(false)} className="md:hidden text-ink">
+               <button onClick={() => setShowSidebar(false)} className="text-ink hover:text-industrial-orange transition-colors">
                   <X size={20} />
                </button>
             </div>
@@ -390,7 +410,7 @@ const Editor: React.FC<EditorProps> = ({ userProfile, authors, onAddAuthor, onBa
             <button
                 onClick={handleGenerate}
                 disabled={isGenerating || selectedAuthors.length === 0 || (!content.trim() && !selection)}
-                className="w-full py-3 bg-industrial-orange hover:bg-ink text-white border-2 border-black font-mono font-bold uppercase flex items-center justify-center gap-2 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all disabled:bg-industrial-gray disabled:shadow-none disabled:translate-x-0 disabled:translate-y-0 disabled:border-transparent disabled:cursor-not-allowed"
+                className={`w-full py-3 bg-industrial-orange hover:bg-ink text-white border-2 border-black font-mono font-bold uppercase flex items-center justify-center gap-2 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] transition-all disabled:bg-industrial-gray disabled:shadow-none disabled:translate-x-0 disabled:translate-y-0 disabled:border-transparent disabled:cursor-not-allowed ${hasContent && hasAuthors && !isGenerating ? 'animate-pulse' : ''}`}
             >
                 {isGenerating ? (
                     <><RefreshCw className="animate-spin" size={16} /> PROCESSING...</>
